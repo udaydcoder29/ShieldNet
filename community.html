@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ShieldNet Community</title>
+<style>
+
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:'Segoe UI',sans-serif;
+    background:#0f172a;
+    background-image: url("background.png");
+    color:white;
+}
+
+/* Layout */
+.app{
+    display:flex;
+    min-height:100vh;
+}
+
+/* Sidebar */
+.sidebar{
+    width:250px;
+    padding:20px;
+    border-right:1px solid #1e293b;
+}
+.sidebar h2{margin-top:0}
+.sidebar a{
+    display:block;
+    padding:10px;
+    color:#cbd5e1;
+    text-decoration:none;
+    border-radius:8px;
+    margin-bottom:6px;
+}
+.sidebar a:hover{background:#1e293b}
+
+/* Feed */
+.feed{
+    flex:2;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+/* Right Panel */
+.right-panel{
+    width:300px;
+    padding:20px;
+    border-left:1px solid #1e293b;
+}
+
+/* Card */
+.post-card{
+    width:500px;
+    background:#1e293b;
+    border-radius:16px;
+    padding:15px;
+    margin-bottom:20px;
+}
+
+/* Header */
+.post-header{
+    display:flex;
+    align-items:center;
+    margin-bottom:10px;
+}
+
+.avatar{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    margin-right:10px;
+    object-fit:cover;
+}
+
+.username{
+    font-weight:bold;
+}
+
+.verified{
+    color:#3b82f6;
+    margin-left:5px;
+}
+
+/* Image */
+.post-image{
+    width:100%;
+    border-radius:12px;
+    margin-top:10px;
+}
+
+/* Risk Badge */
+.risk-badge{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    margin-top:8px;
+}
+.high{background:red}
+.medium{background:orange}
+.low{background:green}
+
+/* Buttons */
+.actions{
+    margin-top:10px;
+}
+.actions button{
+    background:none;
+    border:none;
+    color:#cbd5e1;
+    cursor:pointer;
+    margin-right:10px;
+}
+.actions button:hover{color:white}
+
+/* Comments */
+.comment{
+    margin-top:8px;
+    font-size:13px;
+    background:#0f172a;
+    padding:6px;
+    border-radius:8px;
+}
+
+/* Form */
+.create-post{
+    width:500px;
+    background:#1e293b;
+    padding:15px;
+    border-radius:16px;
+    margin-bottom:20px;
+}
+input,textarea{
+    width:100%;
+    padding:8px;
+    margin-bottom:8px;
+    border-radius:8px;
+    border:none;
+}
+button.primary{
+    background:#3b82f6;
+    color:white;
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+}
+
+/* Floating Button */
+.floating-btn{
+    position:fixed;
+    bottom:25px;
+    right:30px;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:#3b82f6;
+    color:white;
+    font-size:30px;
+    border:none;
+    cursor:pointer;
+    box-shadow:0 0 20px rgba(59,130,246,0.6);
+}
+
+/* Modal */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    background:#1e293b;
+    padding:20px;
+    border-radius:16px;
+    width:400px;
+}
+
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+<div class="sidebar">
+<h2>ShieldNet</h2>
+<a href="#">Dashboard</a>
+<a href="#">Chatbot</a>
+<a href="#">Community</a>
+</div>
+
+<div class="feed">
+
+<div id="posts"></div>
+
+</div>
+
+<div class="right-panel">
+<h3>Community Stats</h3>
+<div id="stats"></div>
+
+<h3>Category Distribution</h3>
+<canvas id="categoryChart" height="250"></canvas>
+</div>
+
+</div>
+
+<script>
+
+let posts=JSON.parse(localStorage.getItem("shieldFeed"))||[];
+
+function save(){
+    localStorage.setItem("shieldFeed",JSON.stringify(posts));
+}
+
+/* Risk */
+function calculateRisk(text){
+    let r=0;
+    if(text.includes("otp")) r+=30;
+    if(text.includes("bank")) r+=20;
+    if(text.includes("urgent")) r+=20;
+    if(text.includes("lottery")) r+=25;
+    if(text.includes("click")) r+=10;
+    return r>100?100:r;
+}
+
+/* Create Post */
+function createPost(){
+    let name=document.getElementById("username").value||"Anonymous";
+    let text=document.getElementById("content").value;
+    let file=document.getElementById("imageInput").files[0];
+
+    let reader=new FileReader();
+
+    reader.onload=function(){
+        let risk=calculateRisk(text.toLowerCase());
+        posts.unshift({
+            id:Date.now(),
+            name,
+            text,
+            image:reader.result||null,
+            risk,
+            likes:0,
+            comments:[]
+        });
+        save();
+        render();
+    };
+
+    if(file) reader.readAsDataURL(file);
+    else reader.onload();
+    closeModal();
+
+}
+
+/* Render */
+function render(){
+    let container=document.getElementById("posts");
+    container.innerHTML="";
+
+    posts.forEach(p=>{
+        let riskClass=p.risk>60?"high":p.risk>30?"medium":"low";
+
+        let div=document.createElement("div");
+        div.className="post-card";
+        div.innerHTML=`
+    <div class="post-header" style="justify-content:space-between;">
+        <div style="display:flex;align-items:center;">
+            <img src="user.png" class="avatar">
+            <div>
+                <div class="username">
+                    ${p.name}
+                    <span class="verified">✔</span>
+                </div>
+                <div style="font-size:12px;color:#94a3b8;">Just now</div>
+            </div>
+        </div>
+
+        <button onclick="deletePost(${p.id})" 
+            style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;">
+            🗑
+        </button>
+    </div>
+
+    <div>${p.text}</div>
+
+    ${p.image?`<img src="${p.image}" class="post-image">`:''}
+
+    <div class="risk-badge ${riskClass}">Risk ${p.risk}%</div>
+
+    <div class="actions">
+        <button onclick="likePost(${p.id})">❤️ ${p.likes}</button>
+    </div>
+
+    <input placeholder="Add comment..." 
+        onkeydown="if(event.key==='Enter')addComment(${p.id},this.value)">
+    ${p.comments.map(c=>`<div class="comment">${c}</div>`).join("")}
+`;
+
+        container.appendChild(div);
+    });
+
+    updateStats();
+    updateChart();
+
+
+    let chart;
+
+function updateChart() {
+
+    const categoryCounts = {};
+
+    posts.forEach(p => {
+        categoryCounts[p.category] = 
+            (categoryCounts[p.category] || 0) + 1;
+    });
+
+    const labels = Object.keys(categoryCounts);
+    const data = Object.values(categoryCounts);
+
+    const ctx = document.getElementById("categoryChart").getContext("2d");
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+        type: "pie",
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    "#3b82f6",
+                    "#ef4444",
+                    "#f59e0b",
+                    "#22c55e",
+                    "#a855f7"
+                ]
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "white"
+                    }
+                }
+            }
+        }
+    });
+}
+
+}
+
+function likePost(id){
+    let p=posts.find(x=>x.id===id);
+    p.likes++;
+    save();render();
+}
+
+function addComment(id,text){
+    if(text.trim()==="") return;
+    let p=posts.find(x=>x.id===id);
+    p.comments.push(text);
+    save();render();
+}
+
+function updateStats(){
+    let total=posts.length;
+    let high=posts.filter(p=>p.risk>60).length;
+    document.getElementById("stats").innerHTML=`
+        <p>Total Posts: ${total}</p>
+        <p>High Risk Posts: ${high}</p>
+    `;
+}
+
+function openModal(){
+    document.getElementById("postModal").style.display="flex";
+}
+
+function closeModal(){
+    document.getElementById("postModal").style.display="none";
+}
+
+function deletePost(id){
+    if(!confirm("Delete this post?")) return;
+
+    posts = posts.filter(p => p.id !== id);
+    save();
+    render();
+}
+
+
+
+render();
+
+</script>
+
+<button class="floating-btn" onclick="openModal()">＋</button>
+
+<div class="modal" id="postModal">
+    <div class="modal-content">
+        <h3>Create Post</h3>
+        <input id="username" placeholder="Your Name">
+        <textarea id="content" placeholder="Describe the scam..."></textarea>
+        <input type="file" id="imageInput" accept="image/*">
+        <button class="primary" onclick="createPost()">Post</button>
+        <button onclick="closeModal()">Cancel</button>
+    </div>
+</div>
+
+</body>
+</html>

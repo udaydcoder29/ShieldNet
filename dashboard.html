@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ShieldNet - Dashboard</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            background-image: url("background.png");
+            color: white;
+        }
+
+        /* ================= NAVBAR ================= */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 60px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+         .main-logo {
+    width: 200px;   /* Adjust size here */
+    margin-bottom: 10px;
+}
+
+        .nav-links a {
+            margin-left: 25px;
+            text-decoration: none;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .nav-links a {
+    margin-left: 15px;
+    padding: 8px 16px;
+    text-decoration: none;
+    color: #cbd5e1;
+    font-size: 14px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.nav-links a:hover {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+
+        .nav-links a:hover {
+            color: #38bdf8;
+        }
+
+        /* ================= MAIN CONTENT ================= */
+
+        .container {
+            width: 1000px;
+            margin: 50px auto;
+        }
+
+        .welcome {
+            margin-bottom: 30px;
+        }
+
+        .welcome h2 {
+            color: #22c55e;
+            margin-bottom: 5px;
+        }
+
+        .welcome p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        /* ================= SCANNER CARD ================= */
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            margin-bottom: 40px;
+        }
+
+        .card h3 {
+            margin-bottom: 20px;
+            color: #38bdf8;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 8px #38bdf8;
+        }
+
+        .scan-btn {
+            padding: 12px 25px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .scan-btn:hover {
+            background: #2563eb;
+        }
+
+        /* ================= RISK SECTION ================= */
+
+        .risk-section {
+            margin-top: 30px;
+        }
+
+        .risk-score {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 15px;
+            background: #334155;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress {
+    width: 0%;
+    height: 100%;
+    background: gray;
+    transition: width 0.6s ease-in-out, background 0.4s ease;
+}
+
+        
+
+        .status-indicator {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #cbd5e1;   /* Neutral initially */
+        }
+
+        /* ================= AI SUMMARY ================= */
+
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+        }
+
+        .summary h4 {
+            margin-bottom: 10px;
+            color: #22c55e;
+        }
+
+        .summary ul {
+            margin-left: 20px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .summary li {
+            margin-bottom: 8px;
+        }
+
+        .gauge-container {
+    position: relative;
+    width: 150px;
+    margin-bottom: 20px;
+}
+
+.gauge-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 22px;
+    font-weight: bold;
+}
+
+
+        /* ================= RECENT SCANS ================= */
+
+        .history {
+            margin-top: 40px;
+        }
+
+        .history h3 {
+            margin-bottom: 15px;
+            color: #38bdf8;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .safe { color: #22c55e; }
+        .suspicious { color: yellow; }
+        .fraud { color: red; }
+        @media (max-width: 768px) {
+
+    .container {
+        width: 95%;
+        margin: 20px auto;
+    }
+
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nav-links {
+        margin-top: 10px;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .gauge-container {
+        width: 120px;
+    }
+}
+
+
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <img src="logo.png" class="main-logo">
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="community.html">Community</a>
+            <a href="chatbot.html">Chatbot</a>
+            <a href="about.html">About</a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="container">
+
+        <div class="welcome">
+            <h2>Welcome, User 👋</h2>
+        </div>
+
+        <div class="card">
+            <h3>🔍 Scan Suspicious Link</h3>
+
+            <!-- Added IDs -->
+            <input type="text" id="urlInput" placeholder="Paste suspicious URL here...">
+            <button class="scan-btn" id="scanButton">Scan Now</button>
+
+            <div class="risk-section">
+                <div class="gauge-container">
+    <svg width="150" height="150">
+        <circle cx="75" cy="75" r="60" stroke="#334155" stroke-width="10" fill="none"/>
+        <circle id="gaugeProgress"
+                cx="75" cy="75" r="60"
+                stroke="green"
+                stroke-width="10"
+                fill="none"
+                stroke-dasharray="377"
+                stroke-dashoffset="377"
+                stroke-linecap="round"
+                transform="rotate(-90 75 75)"/>
+    </svg>
+    <div class="gauge-text" id="riskScore">--%</div>
+</div>
+
+
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+
+                <div class="status-indicator" id="statusText">
+    Status: -- 
+</div>
+
+            </div>
+
+            <div class="summary">
+                <h4>AI Analysis Summary</h4>
+                <ul id="summaryList">
+                    <!-- AI results will appear here dynamically -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="history">
+            <h3>Recent Scan History</h3>
+
+            <div class="history-item">
+                <span>secure-bank-login.xyz</span>
+                <span class="fraud">Fraud</span>
+            </div>
+
+            <div class="history-item">
+                <span>gov-update-info.com</span>
+                <span class="suspicious">Suspicious</span>
+            </div>
+
+            <div class="history-item">
+                <span>google.com</span>
+                <span class="safe">Safe</span>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+
+let scanHistory = [];
+
+document.getElementById("scanButton").addEventListener("click", function () {
+
+    const url = document.getElementById("urlInput").value.toLowerCase();
+    let risk = 0;
+    let reasons = [];
+
+    if (!url) {
+        alert("Please enter a URL");
+        return;
+    }
+
+    const keywords = ["login", "verify", "update", "bank", "urgent", "free"];
+    keywords.forEach(word => {
+        if (url.includes(word)) {
+            risk += 15;
+            reasons.push("Suspicious keyword detected: " + word);
+        }
+    });
+
+    if (url.startsWith("http://")) {
+        risk += 15;
+        reasons.push("Uses unsecured HTTP connection");
+    }
+
+    if (url.length > 50) {
+        risk += 10;
+        reasons.push("URL length unusually long");
+    }
+
+    const suspiciousDomains = [".xyz", ".top", ".ru", ".tk"];
+    suspiciousDomains.forEach(domain => {
+        if (url.includes(domain)) {
+            risk += 20;
+            reasons.push("Suspicious domain extension detected");
+        }
+    });
+
+    const numberCount = (url.match(/[0-9]/g) || []).length;
+    if (numberCount > 5) {
+        risk += 10;
+        reasons.push("Excessive numeric characters in URL");
+    }
+
+    if (risk > 100) risk = 100;
+
+    animateGauge(risk);
+    updateStatus(risk);
+    updateSummary(reasons);
+    updateHistory(url, risk);
+});
+
+function animateGauge(risk) {
+
+    const circle = document.getElementById("gaugeProgress");
+    const text = document.getElementById("riskScore");
+    const progressBar = document.getElementById("progressBar");
+
+    const circumference = 377;
+    const offset = circumference - (risk / 100) * circumference;
+
+    circle.style.strokeDashoffset = offset;
+    progressBar.style.width = risk + "%";
+
+    // Smooth number animation
+    let current = 0;
+    const interval = setInterval(() => {
+        if (current >= risk) {
+            clearInterval(interval);
+        } else {
+            current++;
+            text.innerText = current + "%";
+        }
+    }, 8);
+
+    // Color sync
+    if (risk <= 40) {
+        circle.style.stroke = "green";
+        progressBar.style.background = "green";
+    }
+    else if (risk <= 70) {
+        circle.style.stroke = "orange";
+        progressBar.style.background = "orange";
+    }
+    else {
+        circle.style.stroke = "red";
+        progressBar.style.background = "red";
+    }
+}
+
+function updateStatus(risk) {
+
+    const statusText = document.getElementById("statusText");
+
+
+    if (risk <= 40) {
+        statusText.innerText = "Status: SAFE";
+        statusText.style.color = "lightgreen";
+    } 
+    else if (risk <= 70) {
+        statusText.innerText = "Status: SUSPICIOUS";
+        statusText.style.color = "yellow";
+    } 
+    else {
+        statusText.innerText = "Status: FRAUD";
+        statusText.style.color = "red";
+    }
+}
+
+function updateSummary(reasons) {
+
+    const summaryList = document.getElementById("summaryList");
+    summaryList.innerHTML = "";
+
+    if (reasons.length === 0) {
+        summaryList.innerHTML = "<li>No major risk indicators detected.</li>";
+    } else {
+        reasons.forEach(reason => {
+            summaryList.innerHTML += "<li>" + reason + "</li>";
+        });
+    }
+}
+
+function updateHistory(url, risk) {
+
+    let status = "Safe";
+    let className = "safe";
+
+    if (risk > 70) {
+        status = "Fraud";
+        className = "fraud";
+    } 
+    else if (risk > 40) {
+        status = "Suspicious";
+        className = "suspicious";
+    }
+
+    scanHistory.unshift({ url, status, className });
+
+    if (scanHistory.length > 3) {
+        scanHistory.pop();
+    }
+
+    const historyContainer = document.querySelector(".history");
+    historyContainer.innerHTML = "<h3>Recent Scan History</h3>";
+
+    scanHistory.forEach(item => {
+        historyContainer.innerHTML += `
+            <div class="history-item">
+                <span>${item.url}</span>
+                <span class="${item.className}">${item.status}</span>
+            </div>
+        `;
+    });
+}
+
+</script>
+
+
+</body>
+</html>

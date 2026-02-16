@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ShieldNet AI Assistant</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    background-image: url("background.png");
+    color: white;
+}
+
+/* Layout */
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 270px;
+    background: #0f172a;
+    border-right: 1px solid #334155;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar h2 {
+    margin: 0 0 15px 0;
+}
+
+.sidebar button {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.new-btn { background: #3b82f6; color: white; }
+.export-btn { background: #22c55e; color: white; }
+
+.history {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chat-item {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    font-size: 13px;
+}
+
+.chat-item.active {
+    background: #3b82f6;
+}
+
+.chat-item:hover {
+    background: #334155;
+}
+
+/* Chat Area */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    padding: 18px;
+    border-bottom: 1px solid #334155;
+    font-weight: bold;
+}
+
+.chat-box {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.message {
+    display: flex;
+    margin-bottom: 15px;
+    align-items: flex-end;
+}
+
+.user { justify-content: flex-end; }
+.bot { justify-content: flex-start; }
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin: 0 8px;
+    border: 2px solid #3b82f6;
+}
+
+.bubble {
+    max-width: 65%;
+    padding: 12px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+}
+
+.user-bubble { background: #3b82f6; }
+.bot-bubble { background: #1e293b; border: 1px solid #334155; }
+
+.typing-dots span {
+    animation: blink 1.2s infinite;
+}
+.typing-dots span:nth-child(2){ animation-delay:.2s }
+.typing-dots span:nth-child(3){ animation-delay:.4s }
+
+@keyframes blink {
+    0%{opacity:0.2}
+    20%{opacity:1}
+    100%{opacity:0.2}
+}
+
+/* Input */
+.input-area {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid #334155;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+}
+
+.input-area button {
+    margin-left: 8px;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+}
+
+.mic-active {
+    background: red !important;
+}
+
+@media (max-width: 768px) {
+
+    .sidebar {
+        display: none; /* optional */
+    }
+
+    .chat-area {
+        width: 100%;
+    }
+
+    .input-area input {
+        font-size: 14px;
+    }
+
+    .avatar {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="sidebar">
+    <h2>ShieldNet</h2>
+    <button class="new-btn" onclick="newChat()">+ New Chat</button>
+    <button class="export-btn" onclick="exportChat()">Export Chat</button>
+    <div class="history" id="history"></div>
+</div>
+
+<div class="chat-area">
+    <div class="header">🤖 AI Fraud Assistant</div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-area">
+        <input id="input" placeholder="Type message..." onkeydown="if(event.key==='Enter')send()">
+        <button onclick="startMic()" id="micBtn">🎤</button>
+        <button onclick="send()">Send</button>
+    </div>
+</div>
+
+</div>
+
+<script>
+
+let chats = JSON.parse(localStorage.getItem("shieldChats")) || [];
+let active = 0;
+
+/* Chat System */
+
+function save(){ localStorage.setItem("shieldChats", JSON.stringify(chats)); }
+
+function newChat(){
+    chats.push({title:"New Chat", messages:[]});
+    active = chats.length-1;
+    save(); renderHistory(); renderChat();
+}
+
+function renderHistory(){
+    const h = document.getElementById("history");
+    h.innerHTML="";
+    chats.forEach((c,i)=>{
+        const div=document.createElement("div");
+        div.className="chat-item"+(i===active?" active":"");
+        div.innerText=c.title;
+        div.onclick=()=>{active=i;renderHistory();renderChat();}
+        h.appendChild(div);
+    });
+}
+
+function renderChat(){
+    const box=document.getElementById("chatBox");
+    box.innerHTML="";
+    chats[active].messages.forEach(m=>{
+        addMessage(m.text,m.sender,false);
+    });
+}
+
+function store(sender,text){
+    chats[active].messages.push({sender,text});
+    if(chats[active].title==="New Chat")
+        chats[active].title=text.substring(0,25);
+    save(); renderHistory();
+}
+
+/* UI Message */
+
+function addMessage(text,sender,storeFlag=true){
+    const box=document.getElementById("chatBox");
+    const div=document.createElement("div");
+    div.className="message "+sender;
+    div.innerHTML= sender==="user"?
+        `<div class="bubble user-bubble">${text}</div><img src="user.png" class="avatar">`
+        :
+        `<img src="chatbot.png" class="avatar"><div class="bubble bot-bubble">${text}</div>`;
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+    if(storeFlag) store(sender,text);
+}
+
+/* Send */
+
+function send(){
+    const input=document.getElementById("input");
+    const text=input.value.trim().toLowerCase();
+    if(!text) return;
+
+    addMessage(text,"user");
+    input.value="";
+
+    const typing=document.createElement("div");
+    typing.className="message bot";
+    typing.innerHTML=`<img src="chatbot.png" class="avatar">
+        <div class="bubble bot-bubble typing-dots">
+        <span>.</span><span>.</span><span>.</span></div>`;
+    document.getElementById("chatBox").appendChild(typing);
+
+    setTimeout(()=>{
+        typing.remove();
+        const reply=aiReply(text);
+        addMessage(reply,"bot");
+        speak(reply);
+    },1000);
+}
+
+/* AI Logic */
+
+function aiReply(text){
+
+    if(["hi","hello","hey"].includes(text))
+        return "👋 Hello! Paste any suspicious message to analyze.";
+
+    if(text.includes("thank"))
+        return "😊 You're welcome! Stay safe online.";
+
+    let risk=0;
+    if(text.includes("otp")) risk+=30;
+    if(text.includes("bank")) risk+=20;
+    if(text.includes("urgent")) risk+=20;
+    if(text.includes("lottery")) risk+=25;
+    if(text.includes("click")) risk+=10;
+    if(risk>100) risk=100;
+
+    if(risk>60) return `🚨 Risk ${risk}% - High scam probability.`;
+    if(risk>30) return `⚠ Risk ${risk}% - Suspicious content detected.`;
+    return `✅ Risk ${risk}% - No strong scam signals.`;
+}
+
+/* Voice */
+
+function speak(text){
+    const u=new SpeechSynthesisUtterance(text);
+    const voices=speechSynthesis.getVoices();
+    const female=voices.find(v=>v.name.toLowerCase().includes("zira")||v.name.toLowerCase().includes("samantha"));
+    if(female) u.voice=female;
+    speechSynthesis.speak(u);
+}
+
+/* Mic */
+
+function startMic(){
+    if(!('webkitSpeechRecognition' in window)) return alert("Not supported");
+    const btn=document.getElementById("micBtn");
+    btn.classList.add("mic-active");
+
+    const rec=new webkitSpeechRecognition();
+    rec.start();
+    rec.onresult=e=>{
+        document.getElementById("input").value=e.results[0][0].transcript;
+        btn.classList.remove("mic-active");
+    };
+}
+
+/* Export */
+
+function exportChat(){
+    const content=chats[active].messages.map(m=>`${m.sender}: ${m.text}`).join("\n");
+    const blob=new Blob([content],{type:"text/plain"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="ShieldNetChat.txt";
+    a.click();
+}
+
+/* Init */
+
+if(chats.length===0)newChat();
+else{renderHistory();renderChat();}
+
+</script>
+</body>
+</html>
